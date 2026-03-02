@@ -23,3 +23,8 @@ http server
 用来调试各插件时，模拟业务服务器返回数据
 - user_identify
 - rewrite_response
+
+# regression_testing
+回归测试脚本
+## envoy_filter_test.py
+测试envoy插件链不同返回状态
