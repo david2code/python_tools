@@ -26,5 +26,21 @@ http server
 
 # regression_testing
 回归测试脚本
-## envoy_filter_test.py
+## filter_test.py
 测试envoy插件链不同返回状态
+### 使用方法
+- 使用 filter_chain_test_d5d5ae72586f07d3eb22253bde513cb479ea423e.patch对 srhino_plugins打补丁
+- 准备插件so
+在脚本所在目录下执行
+~/shell_tools/make_filter_chain_test_so.sh /home/david/srhino_plugins/user-identify/
+- 测试引擎容错
+设置脚本的 test_fault_tolerant 为 True
+```shell
+sudo ./filter_test.py -e /home/david/envoy-filters/ -s filter_so/
+```
+- 测试旧版本
+设置脚本的 test_fault_tolerant 为 False
+```shell
+sudo ./filter_test.py -e /home/david/2envoy-filters/ -s filter_so/
+```
+

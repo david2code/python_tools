@@ -59,7 +59,7 @@ index f35b4432..7ebb4871 100644
  Plugin* createInstance(Config* config) { return new Plugin(config); }
  
 diff --git a/user-identify/source/plugin.cc b/user-identify/source/plugin.cc
-index c5c2687d..8ff5b6d0 100644
+index c5c2687d..70b12f4c 100644
 --- a/user-identify/source/plugin.cc
 +++ b/user-identify/source/plugin.cc
 @@ -98,7 +98,244 @@ bool isHtmlRequest(const std::string_view accept) {
@@ -103,7 +103,7 @@ index c5c2687d..8ff5b6d0 100644
 +  context.headers().set("Header-To-Modify", modified_header_value);
 +}
 +
- HeaderStatus Plugin::onRequestHeader(HeaderContext& context) {
++HeaderStatus Plugin::onRequestHeader(HeaderContext& context) {
 +#if TEST_MODE == MODE_CONTINUE
 +  // 测试对 headers 进行增删改
 +  modifyHeader(context, "_plugin_modified_onDecodeHeader_Continue");
@@ -242,7 +242,7 @@ index c5c2687d..8ff5b6d0 100644
 +
 +DataStatus Plugin::onResponseBody(BodyContext& context) {
 +#if TEST_MODE == MODE_ENCODE_HEADER_BREAK
-+  if (!context.hasMoreBody()) {
++  if (context.hasMoreBody()) {
 +    return DataStatus::WaitForBody;
 +  }
 +  modifyHeader(*response_header_, "_plugin_modified_onEncodeHeader_Break");
@@ -302,7 +302,7 @@ index c5c2687d..8ff5b6d0 100644
 +}
 +
 +#if 0
-+HeaderStatus Plugin::onRequestHeader(HeaderContext& context) {
+ HeaderStatus Plugin::onRequestHeader(HeaderContext& context) {
 +  LOG(error, "critical error, bootstrap mode!!");
  #ifdef BOOTSTRAP_MODE
    LOG(error, "critical error, bootstrap mode!!");
