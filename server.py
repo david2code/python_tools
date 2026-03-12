@@ -320,7 +320,12 @@ class Resquest(BaseHTTPRequestHandler):
         else:
             #获取post提交的数据
             self.send_header("Content-type","text/html")  #设置服务器响应头
-            datas = self.rfile.read(int(self.headers['content-length']))    #固定格式，获取表单提交的数据
+            # 检查是否使用 chunked 编码
+            if 'Transfer-Encoding' in self.headers and self.headers['Transfer-Encoding'].lower() == 'chunked':
+                datas = self.read_chunked_data()
+            else:
+                # 传统方式，使用 Content-Length
+                datas = self.rfile.read(int(self.headers['content-length']))    #固定格式，获取表单提交的数据
             #datas = urllib.unquote(datas).decode("utf-8", 'ignore')
      
             buf = '''<!DOCTYPE HTML>
@@ -346,11 +351,37 @@ class Resquest(BaseHTTPRequestHandler):
         print(self.headers)
         print('----- headers end ----')
 
-        self.request_process();
+        self.request_process()
         #self.resp_202();
  
+    def read_chunked_data(self):
+        """读取 chunked 编码的请求体"""
+        data = b''
+        while True:
+            # 读取块大小行
+            chunk_size_line = self.rfile.readline()
+            if not chunk_size_line:
+                break
+            # 解析块大小（十六进制）
+            chunk_size = int(chunk_size_line.strip(), 16)
+            if chunk_size == 0:
+                # 读取最后的空行
+                self.rfile.readline()
+                break
+            # 读取块数据
+            chunk_data = self.rfile.read(chunk_size)
+            data += chunk_data
+            # 读取块后的换行符
+            self.rfile.readline()
+        return data
+
     def do_POST(self):
-        datas = self.rfile.read(int(self.headers['content-length']))
+        # 检查是否使用 chunked 编码
+        if 'Transfer-Encoding' in self.headers and self.headers['Transfer-Encoding'].lower() == 'chunked':
+            datas = self.read_chunked_data()
+        else:
+            # 传统方式，使用 Content-Length
+            datas = self.rfile.read(int(self.headers['content-length']))
         print("\ndo post: %s, client_address: %s" % (self.path, self.client_address))
 
         print('----- headers start ----')
@@ -361,7 +392,7 @@ class Resquest(BaseHTTPRequestHandler):
         print(datas)
         print('----- request body end ----')
 
-        self.request_process();
+        self.request_process()
  
 if __name__ == '__main__':
 
