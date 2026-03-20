@@ -13,8 +13,10 @@ from optparse import OptionParser
  
 parse = OptionParser()
 parse.add_option("-6", "--ipv6", action="store_false", dest="ipv6", help="run on ipv6")
-parse.add_option("-m", "--mock", default="identify", dest="mock", help="run mock: identify, rewrite, weak, big_body")
+parse.add_option("-m", "--mock", default="identify", dest="mock", help="run mock: identify, rewrite, weak, big_body, http_server")
 parse.add_option("-p", "--port", default="8000", dest="port", help="listen port")
+parse.add_option("-c", "--piece_cnt", default="1", dest="piece_cnt", help="piece count")
+parse.add_option("-s", "--piece_size", default="1", dest="piece_size", help="piece size")
 (options, args) = parse.parse_args()
 print(options)
 port = int(options.port)
@@ -22,6 +24,12 @@ host = ('0.0.0.0', port)
 if options.ipv6 is not None:
     host = ('::', port)
     socketserver.TCPServer.address_family=socket.AF_INET6
+
+if int(options.piece_cnt) < 1:
+    options.piece_cnt = "1"
+if int(options.piece_size) < 1:
+    options.piece_size = "1"
+
 
 data = {'result': 'this is a test'}
 mock = options.mock
@@ -317,15 +325,23 @@ class Resquest(BaseHTTPRequestHandler):
                 self.send_header("Content-Encoding","gzip")
                 self.send_header("Content-Length", sys.getsizeof(buf));
                 
-        else:
-            #获取post提交的数据
+        elif mock == "http_server":
+            piece_cnt = int(options.piece_cnt)
+            piece_size = int(options.piece_size)
+            print(piece_cnt, piece_size)
+
             self.send_header("Content-type","text/html")  #设置服务器响应头
-            # 检查是否使用 chunked 编码
-            if 'Transfer-Encoding' in self.headers and self.headers['Transfer-Encoding'].lower() == 'chunked':
-                datas = self.read_chunked_data()
-            else:
-                # 传统方式，使用 Content-Length
-                datas = self.rfile.read(int(self.headers['content-length']))    #固定格式，获取表单提交的数据
+            self.send_header("Content-Length", piece_cnt * piece_size)
+            self.end_headers()
+
+            for i in range(piece_cnt):
+              buf = chr(65 + i) * piece_size
+              self.wfile.write(buf.encode())  #里面需要传入二进制数据，用encode()函数转换为二进制数据   #设置响应body，即前端页面要展示的数据
+              time.sleep(0.2)
+
+            return
+        else:
+            self.send_header("Content-type","text/html")  #设置服务器响应头
             #datas = urllib.unquote(datas).decode("utf-8", 'ignore')
      
             buf = '''<!DOCTYPE HTML>
@@ -337,9 +353,11 @@ class Resquest(BaseHTTPRequestHandler):
                     Path:%s
                     Post Data:%s  <br />
                 </body>
-            </html>''' %(self.path, datas)
+            </html>''' %(self.path, self.datas)
+            buf = "123"
 
 
+        self.send_header("Content-Length", len(buf))
         self.end_headers()
         if content_encoding == "gzip":
             self.wfile.write(buf)  #里面需要传入二进制数据，用encode()函数转换为二进制数据   #设置响应body，即前端页面要展示的数据
@@ -378,10 +396,10 @@ class Resquest(BaseHTTPRequestHandler):
     def do_POST(self):
         # 检查是否使用 chunked 编码
         if 'Transfer-Encoding' in self.headers and self.headers['Transfer-Encoding'].lower() == 'chunked':
-            datas = self.read_chunked_data()
+            self.datas = self.read_chunked_data()
         else:
             # 传统方式，使用 Content-Length
-            datas = self.rfile.read(int(self.headers['content-length']))
+            self.datas = self.rfile.read(int(self.headers['content-length']))
         print("\ndo post: %s, client_address: %s" % (self.path, self.client_address))
 
         print('----- headers start ----')
@@ -389,7 +407,7 @@ class Resquest(BaseHTTPRequestHandler):
         print('----- headers end ----')
 
         print('----- request body start ----')
-        print(datas)
+        print(self.datas)
         print('----- request body end ----')
 
         self.request_process()
