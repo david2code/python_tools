@@ -21,8 +21,29 @@ https://127.0.0.1:4443/
 ## server.py
 http server
 用来调试各插件时，模拟业务服务器返回数据
-- user_identify
-- rewrite_response
+```shell
+Usage: server.py [options]
+
+Options:
+  -h, --help            show this help message and exit
+  -6, --ipv6            run on ipv6
+  -m MOCK, --mock=MOCK  run mock: identify, rewrite, weak, big_body,
+                        http_server, sendfile
+  -p PORT, --port=PORT  listen port
+  -c PIECE_CNT, --piece_cnt=PIECE_CNT
+                        piece count
+  -s PIECE_SIZE, --piece_size=PIECE_SIZE
+                        piece size
+```
+### mock
+- identify
+user_identify
+- rewrite
+rewrite_response
+- http_server
+用于模拟业务服务器返回数据, 分 piece_cnt次响应,每次响应 piece_size 字节,每次响应之间间隔 0.2 秒
+- sendfile
+用于模拟文件响应,使用sendfile函数发送文件
 
 # regression_testing
 回归测试脚本

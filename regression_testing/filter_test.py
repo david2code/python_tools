@@ -203,6 +203,7 @@ if __name__ == '__main__':
     print("start envoy process")
     time.sleep(1)
 
+  # for test_mode in range(3, 4):
   for test_mode in range(0, 19):
 
     # prepare plugin so

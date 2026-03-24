@@ -6,14 +6,17 @@ curl -X GET 127.0.0.1:8000 -v
 '''
 
 from http.server import HTTPServer, BaseHTTPRequestHandler
+import http.server
 import sys
 import time
 import socket, socketserver
 from optparse import OptionParser
+import urllib.parse
+import os
  
 parse = OptionParser()
 parse.add_option("-6", "--ipv6", action="store_false", dest="ipv6", help="run on ipv6")
-parse.add_option("-m", "--mock", default="identify", dest="mock", help="run mock: identify, rewrite, weak, big_body, http_server")
+parse.add_option("-m", "--mock", default="identify", dest="mock", help="run mock: identify, rewrite, weak, big_body, http_server, sendfile")
 parse.add_option("-p", "--port", default="8000", dest="port", help="listen port")
 parse.add_option("-c", "--piece_cnt", default="1", dest="piece_cnt", help="piece count")
 parse.add_option("-s", "--piece_size", default="1", dest="piece_size", help="piece size")
@@ -55,6 +58,7 @@ print("run on: %s, filter: %s, content_type: %s, content_encoding: %s" % (host, 
 
  
 class Resquest(BaseHTTPRequestHandler):
+# class Resquest(http.server.SimpleHTTPRequestHandler):
     timeout = 10
     server_version = "Apache"   #设置服务器返回的的响应头 
 
@@ -63,10 +67,89 @@ class Resquest(BaseHTTPRequestHandler):
         import io
         import gzip
 
-        print(sys.getsizeof(content));
-        c = gzip.compress(content.encode());
-        print(sys.getsizeof(c));
+        print(sys.getsizeof(content))
+        c = gzip.compress(content.encode())
+        print(sys.getsizeof(c))
         return c
+
+    def guess_type(self, path):
+        """简单的 MIME 类型猜测"""
+        import mimetypes
+        return mimetypes.guess_type(path)[0] or 'application/octet-stream'
+
+    def translate_path(self, path):
+        """将 URL 路径转换为本地文件系统路径（与 SimpleHTTPRequestHandler 相同）"""
+        # 去除查询参数和锚点
+        path = path.split('?', 1)[0]
+        path = path.split('#', 1)[0]
+        # 处理相对路径，防止目录遍历攻击
+        path = urllib.parse.unquote(path)
+        path = path.strip('/')
+        # 将当前工作目录作为根目录
+        base_dir = os.getcwd()
+        # 将路径中的 '/' 转换为系统路径分隔符
+        path = path.replace('/', os.sep)
+        # 拼接绝对路径并规范化
+        full_path = os.path.join(base_dir, path)
+        # 规范化路径，防止 .. 等
+        full_path = os.path.normpath(full_path)
+        # 确保路径在根目录下（安全检查）
+        if not full_path.startswith(base_dir):
+            full_path = base_dir
+        return full_path
+
+    def md5sum(self, path):
+        """计算文件的 MD5 校验和"""
+        import hashlib
+        print("md5sum: %s" % path)
+        md5 = hashlib.md5()
+        with open(path, 'rb') as f:
+            md5.update(f.read())
+            return md5.hexdigest()
+            # for chunk in iter(lambda: f.read(4096), b''):
+                # hashlib.md5(chunk).hexdigest()
+
+    def send_head(self):
+        path = self.translate_path(self.path)
+        print(path)
+        if os.path.isdir(path):
+          # 简单处理：不提供目录列表，返回 404
+          self.send_error(404, "Directory listing not supported")
+          return None
+        try:
+            f = open(path, 'rb')
+            self.send_header("Content-Length", str(os.path.getsize(path)))
+            self.send_header("Content-Type", self.guess_type(path))
+            self.send_header("file-md5sum", self.md5sum(path))
+            self.end_headers()
+            return f
+        except (OSError, IOError):
+            self.send_error(404, "File not found")
+            return None
+
+    def copyfile(self, source, outputfile):
+        """发送文件内容，优先使用 sendfile"""
+        # 获取源文件描述符和目标 socket 描述符
+        src_fd = source.fileno()
+        dst_fd = outputfile.fileno()
+        try:
+            # 获取文件大小
+            st = os.fstat(src_fd)
+            length = st.st_size
+            print("src length: %d" % length)
+            offset = 0
+            # 使用 sendfile（仅 Unix）
+            while offset < length:
+                # sent = os.sendfile(dst_fd, src_fd, offset, length - offset)
+                sent = self.request.sendfile(source, offset, length - offset)
+                print("sent: %d" % sent)
+                offset += sent
+            print("sendfile done, offset: %d" % offset)
+        except (AttributeError, OSError):
+            # 如果 sendfile 不可用（比如 Windows），回退到普通复制
+            # 注意：在 Windows 上，os.sendfile 不存在
+            print("sendfile not available")
+            super().copyfile(source, outputfile)  # 调用父类方法（BaseHTTPRequestHandler 有 copyfile
 
     def resp_202(self):
         print(self.path)
@@ -90,14 +173,14 @@ class Resquest(BaseHTTPRequestHandler):
         self.wfile.write(buf.encode())  #里面需要传入二进制数据，用encode()函数转换为二进制数据   #设置响应body，即前端页面要展示的数据
 
     def request_process(self):
-        #time.sleep(1);
+        #time.sleep(1)
         #print(self.path)
 
         #print(self.headers['user-agent'])
         #print(self.headers['content-length'])
         #if self.headers['mock']
         #    mock = self.headers['mock']
-        #print("mock %s" % $mock);
+        #print("mock %s" % $mock)
         self.send_response(200)
         if mock == "big_body":
             self.send_header("mock_mode", mock)     #设置服务器响应头
@@ -205,7 +288,7 @@ class Resquest(BaseHTTPRequestHandler):
             self.send_header("x-content-type-options", "nosniff")
             buf = '''\r\n\r\n\r\n\r\n\r\n\r\n\r\n<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">\r\n<html>\r\n<head>\r\n    <meta charset=\"UTF-8\" http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">\r\n    <meta name=\"viewport\"\r\n          content=\"width=device-width,height=device-height,initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no\">\r\n    <title>深圳市疾病预防管理系统 </title>\r\n    \n\n\n\n\n\n\n<!-- easyui皮肤 -->\n<link href=\"/plugins/easyui/jquery-easyui-theme/default/easyui.css\" rel=\"stylesheet\" type=\"text/css\" />\n<link href=\"/plugins/easyui/jquery-easyui-theme/icon.css\" rel=\"stylesheet\" type=\"text/css\" />\n<link href=\"/plugins/easyui/icons/icon-all.css\" rel=\"stylesheet\" type=\"text/css\" />\n<!-- ztree样式 -->\n<link href=\"/plugins/ztree/css/zTreeStyle/zTreeStyle.css\" rel=\"stylesheet\" type=\"text/css\" />\n\n<script src=\"/plugins/easyui/jquery/jquery-3.6.4.min.js\"></script>\n\n<script src=\"/plugins/easyui/jquery-easyui-1.3.6/jquery.easyui.min.js\" type=\"text/javascript\"></script>\n<script src=\"/plugins/easyui/jquery-easyui-1.3.6/locale/easyui-lang-zh_CN.js\" type=\"text/javascript\"></script>\n\n<!-- jquery扩展 -->\n<script src=\"/plugins/easyui/release/jquery.jdirk.min.js\"></script>\n\n<!-- easyui扩展 -->\n<link href=\"/plugins/easyui/jeasyui-extensions/jeasyui.extensions.css\" rel=\"stylesheet\" type=\"text/css\" />\n\n<script src=\"/plugins/easyui/jeasyui-extensions/jeasyui.extensions.js\" type=\"text/javascript\"></script>\n<script src=\"/plugins/easyui/jeasyui-extensions/jeasyui.extensions.progressbar.js\"></script>\n<script src=\"/plugins/easyui/jeasyui-extensions/jeasyui.extensions.slider.js\"></script>\n<script src=\"/plugins/easyui/jeasyui-extensions/jeasyui.extensions.linkbutton.js\" type=\"text/javascript\"></script>\n<script src=\"/plugins/easyui/jeasyui-extensions/jeasyui.extensions.validatebox.js\" type=\"text/javascript\"></script>\n<script src=\"/plugins/easyui/jeasyui-extensions/jeasyui.extensions.combo.js\" type=\"text/javascript\"></script>\n<script src=\"/plugins/easyui/jeasyui-extensions/jeasyui.extensions.combobox.js\" type=\"text/javascript\"></script>\n<script src=\"/plugins/easyui/jeasyui-extensions/jeasyui.extensions.menu.js\" type=\"text/javascript\"></script>\n<script src=\"/plugins/easyui/jeasyui-extensions/jeasyui.extensions.searchbox.js\" type=\"text/javascript\"></script>\n<script src=\"/plugins/easyui/jeasyui-extensions/jeasyui.extensions.panel.js\" type=\"text/javascript\"></script>\n<script src=\"/plugins/easyui/jeasyui-extensions/jeasyui.extensions.window.js\" type=\"text/javascript\"></script>\n<script src=\"/plugins/easyui/jeasyui-extensions/jeasyui.extensions.dialog.js\" type=\"text/javascript\"></script>\n<script src=\"/plugins/easyui/jeasyui-extensions/jeasyui.extensions.layout.js\" type=\"text/javascript\"></script>\n<script src=\"/plugins/easyui/jeasyui-extensions/jeasyui.extensions.tree.js\" type=\"text/javascript\"></script>\n<script src=\"/plugins/easyui/jeasyui-extensions/jeasyui.extensions.datagrid.js\" type=\"text/javascript\"></script>\n<script src=\"/plugins/easyui/jeasyui-extensions/jeasyui.extensions.treegrid.js\" type=\"text/javascript\"></script>\n<script src=\"/plugins/easyui/jeasyui-extensions/jeasyui.extensions.combogrid.js\" type=\"text/javascript\"></script>\n<script src=\"/plugins/easyui/jeasyui-extensions/jeasyui.extensions.combotree.js\" type=\"text/javascript\"></script>\n<script src=\"/plugins/easyui/jeasyui-extensions/jeasyui.extensions.tabs.js\" type=\"text/javascript\"></script>\n<script src=\"/plugins/easyui/jeasyui-extensions/jeasyui.extensions.theme.js\" type=\"text/javascript\"></script>\n\n<!--<script src=\"/plugins/easyui/release/jeasyui.extensions.all.min.js\"></script>-->\n\n<script src=\"/plugins/easyui/icons/jeasyui.icons.all.js\" type=\"text/javascript\"></script>\n<!--<script src=\"/plugins/easyui/release/jeasyui.icons.all.min.js\"></script>-->\n\n<script src=\"/plugins/easyui/jeasyui-extensions/jeasyui.extensions.icons.js\" type=\"text/javascript\"></script>\n<script src=\"/plugins/easyui/jeasyui-extensions/jeasyui.extensions.gridselector.js\" type=\"text/javascript\"></script>\n\n<script src=\"/plugins/easyui/jeasyui-extensions/jquery.toolbar.js\" type=\"text/javascript\"></script>\n<script src=\"/plugins/easyui/jeasyui-extensions/jquery.comboicons.js\" type=\"text/javascript\"></script>\n<script src=\"/plugins/easyui/jeasyui-extensions/jquery.comboselector.js\" type=\"text/javascript\"></script>\n\n<script src=\"/plugins/easyui/jeasyui-extensions/jquery.portal.js\" type=\"text/javascript\"></script>\n<script src=\"/plugins/easyui/jeasyui-extensions/jquery.my97.js\" type=\"text/javascript\"></script>\n<script src=\"/plugins/easyui/jeasyui-extensions/jeasyui.extensions.ty.js\"></script>\n<script src=\"/plugins/easyui/jeasyui-extensions/datagrid-detailview.js\" type=\"text/javascript\"></script>\n<script src=\"/plugins/echarts/echarts.min.js\"></script>\n<!-- ztree扩展 -->\n<script type=\"text/javascript\" src=\"/plugins/ztree/js/jquery.ztree.core-3.5.js\"></script>\n<script type=\"text/javascript\" src=\"/plugins/ztree/js/jquery.ztree.excheck-3.5.js\"></script>\n<script type=\"text/javascript\" src=\"/plugins/ztree/js/jquery.ztree.exedit.js\"></script>\n\n<link rel=\"stylesheet\" href=\"/plugins/easyui/common/other.css\"></link>\n<link rel=\"stylesheet\" href=\"/plugins/radio-checkbox/css/jquery-labelauty.css\"></link>\n<!-- filedset -->\n<link rel=\"stylesheet\" type=\"text/css\" href=\"/plugins/easyui/fieldset/fieldset.css\" />\n<script type=\"text/javascript\" src=\"/plugins/easyui/fieldset/fieldset.js\"></script>\n<script src=\"/plugins/My97DatePicker/WdatePicker.js\" type=\"text/javascript\"></script>\n<script src=\"/plugins/radio-checkbox/js/jquery-labelauty.js\" type=\"text/javascript\"></script>\n<script src=\"/plugins/commonJs/sinoUtil.js\" type=\"text/javascript\"></script>\n<script src=\"/plugins/commonJs/sinoCBX.js\" type=\"text/javascript\"></script>\n<script src=\"/js/fmtJs.js\" type=\"text/javascript\"></script>\n<script src=\"/plugins/commonJs/pinyin.js\" type=\"text/javascript\"></script>\n<script type=\"text/javascript\" src=\"//api.map.baidu.com/api?v=2.0&ak=znjGwg6cpOGitHF4XT9e43dPtS96D82x\"></script>\n\n<script>\nvar project=\"\";\nvar orgLevel = \"\";\nvar pCode=\"\",cCode=\"\",dCode=\"\",_orgCode=\"\",$orgId=\"\",$orgName=\"\";\nif(orgLevel==\"1\"){\n\tpCode=\"\".substring(0,2)+\"000000\";\n\tcCode=\"\".substring(0,4)+\"0000\";\n\t$orgName=\"\";\n}else if(orgLevel==\"2\"){\n\tpCode=\"\".substring(0,2)+\"000000\";\n\tcCode=\"\".substring(0,4)+\"0000\";\n\tdCode=\"\";\n\t$orgName=\"\";\n}else if(orgLevel==\"3\"){\n\tpCode=\"\".substring(0,2)+\"000000\";\n\tcCode=\"\".substring(0,4)+\"0000\";\n\tdCode=\"\";\n}else if(orgLevel==\"4\"){\n\tpCode=\"\";\n\tcCode=\"\";\n\tdCode=\"\";\n\torgLevel=\"4\";\n}else{\n\tpCode=\"\";\n\tcCode=\"\";\n\tdCode=\"\";\n\torgLevel=\"5\";\n}\n//全局的AJAX访问，处理AJAX清求时SESSION超时\n$.ajaxSetup({\n    contentType:\"application/x-www-form-urlencoded;charset=utf-8\",\n    complete:function(XMLHttpRequest,textStatus){\n          //通过XMLHttpRequest取得响应头，sessionstatus\n          var sessionstatus=XMLHttpRequest.getResponseHeader(\"sessionstatus\");\n          if(sessionstatus==\"timeout\"){\n               //跳转的登录页\n               parent.location.replace('/goto');\n       \t\t}\n    }\n});\n\n\n/**\n * 所有ajax请求url加上 随机数\n */\n$(document).ajaxSend(function(evt, request, settings) {\n\tif(settings.url && settings.url.indexOf('?') != -1) {\n\t\tsettings.url = settings.url.replace('?', '?' + Math.random() + '&');\n\t} else {\n\t\tsettings.url += '?' + Math.random();\n\t}\n});\n\nvar is360 = _mime(\"type\", \"application/vnd.chromium.remoting-viewer\");\n//判断mime\nfunction _mime(option, value) {\n  //debugger;\n  let mimeTypes = navigator.mimeTypes;\n  for (var mt in mimeTypes) {\n    console.log('type:',mimeTypes[mt][option]);\n    if (mimeTypes[mt][option] == value) {\n      return true;\n    }\n  }\n  return false;\n}\n\n\tfunction myBrowser() {\n\t\tvar userAgent = navigator.userAgent; //取得浏览器的userAgent字符串\n\t\tvar isOpera = userAgent.indexOf(\"Opera\") > -1; //判断是否Opera浏览器\n\t\tvar isIE = (userAgent.indexOf(\"compatible\") > -1\n\t\t\t\t&& userAgent.indexOf(\"MSIE\") > -1 && !isOpera); //判断是否IE浏览器\n\t\tvar isEdge = userAgent.indexOf(\"Edge\") > -1; //判断是否IE的Edge浏览器\n\t\tvar isFF = userAgent.indexOf(\"Firefox\") > -1; //判断是否Firefox浏览器\n\t\tvar isSafari = userAgent.indexOf(\"Safari\") > -1\n\t\t\t\t&& userAgent.indexOf(\"Chrome\") == -1; //判断是否Safari浏览器\n\t\tvar isChrome = userAgent.indexOf(\"Chrome\") > -1\n\t\t\t\t&& userAgent.indexOf(\"Safari\") > -1; //判断Chrome浏览器\n\t\tif (isIE) {\n\t\t\tvar reIE = new RegExp(\"MSIE (\\\\d+\\\\.\\\\d+);\");\n\t\t\treIE.test(userAgent);\n\t\t\tvar fIEVersion = parseFloat(RegExp[\"$1\"]);\n\t\t\tif (fIEVersion == 7) {\n\t\t\t\treturn \"IE7\";\n\t\t\t} else if (fIEVersion == 8) {\n\t\t\t\treturn \"IE8\";\n\t\t\t} else if (fIEVersion == 9) {\n\t\t\t\treturn \"IE9\";\n\t\t\t} else if (fIEVersion == 10) {\n\t\t\t\treturn \"IE10\";\n\t\t\t} else if (fIEVersion == 11) {\n\t\t\t\treturn \"IE11\";\n\t\t\t} else {\n\t\t\t\treturn \"0\";\n\t\t\t}//IE版本过低\n\t\t\treturn \"IE\";\n\t\t}\n\t\tif (isOpera) {\n\t\t\treturn \"Opera\";\n\t\t}\n\t\tif (isEdge) {\n\t\t\treturn \"Edge\";\n\t\t}\n\t\tif (isFF) {\n\t\t\treturn \"FF\";\n\t\t}\n\t\tif (isSafari) {\n\t\t\treturn \"Safari\";\n\t\t}\n\t\tif (isChrome) {\n\t\t\treturn \"Chrome\";\n\t\t}\n\n\t}\n\tif (!is360&&myBrowser()!='Chrome') {\n\t\twindow.location = \"/webbrowser\"\n\t}\n\n\t//hex 加密解密\n\tvar digitArray = new Array('0', '1', '2', '3', '4', '5', '6', '7', '8',\n\t\t\t'9', 'a', 'b', 'c', 'd', 'e', 'f');\n\tfunction toHex(n) {\n\t\tvar result = ''\n\t\tvar start = true;\n\t\tfor (var i = 32; i > 0;) {\n\t\t\ti -= 4;\n\t\t\tvar digit = (n >> i) & 0xf;\n\t\t\tif (!start || digit != 0) {\n\t\t\t\tstart = false;\n\t\t\t\tresult += digitArray[digit];\n\t\t\t}\n\t\t}\n\t\treturn (result == '' ? '0' : result);\n\t}\n\tfunction pad(str, len, pad) {\n\t\tvar result = str;\n\t\tfor (var i = str.length; i < len; i++) {\n\t\t\tresult = pad + result;\n\t\t}\n\t\treturn result;\n\t}\n\tfunction encodeHex(str) {\n\t\tvar result = \"\";\n\t\tfor (var i = 0; i < str.length; i++) {\n\t\t\tresult += pad(toHex(str.charCodeAt(i) & 0xff), 2, '0');\n\t\t}\n\t\treturn result;\n\t}\n\n\tfunction ntos(n) {\n\n\t\tn = n.toString(16);\n\n\t\tif (n.length == 1)\n\t\t\tn = \"0\" + n;\n\n\t\tn = \"%\" + n;\n\n\t\treturn unescape(n);\n\n\t}\n\n\tfunction decodeHex(str) {\n\t\tstr = str.replace(new RegExp(\"s/[^0-9a-zA-Z]//g\"));\n\t\tvar result = \"\";\n\t\tvar nextchar = \"\";\n\n\t\tfor (var i = 0; i < str.length; i++) {\n\t\t\tnextchar += str.charAt(i);\n\t\t\tif (nextchar.length == 2) {\n\t\t\t\tresult += ntos(eval('0x' + nextchar));\n\t\t\t\tnextchar = \"\";\n\t\t\t}\n\t\t}\n\t\treturn result;\n\t}\n</script>\n\r\n    <link href=\"/css/index.css\" rel=\"stylesheet\">\r\n    <link href=\"/css/style.css\" rel=\"stylesheet\">\r\n\r\n    <script>\r\n        function refreshCaptcha() {\r\n            document.getElementById(\"img_captcha\").src = \"/images/kaptcha.jpg?t=\" + Math.random();\r\n        }\r\n\r\n    </script>\r\n</head>\r\n\r\n\r\n<body>\r\n<form id='loginForm' name=\"loginForm\" action=\"/goto/blogin\" method=\"post\">\r\n\r\n    <div class=\"body-middle-new\">\r\n        <div class=\"logobj-new\">\r\n            <div class=\"logo-new\"><img src=\"/images/logo_03.png\"></div>\r\n        </div>\r\n        <div class=\"content-new bj\">\r\n            <div class=\"cont_right-new\">\r\n                <h2 class=\"form-title-new\">用户中心</h2>\r\n                <div class=\"input_box-new\">\r\n                    <div class=\"title-new\">账号：</div>\r\n                    <input id=\"uname\" name=\"username\" type=\"text\" placeholder=\"请输入用户名\"/>\r\n                    <div class=\"clear\"></div>\r\n                    <span class=\"err-new\" id=\"uname_text\"></span>\r\n                </div>\r\n                <div class=\"input_box-new\">\r\n                    <div class=\"title-new\">密码：</div>\r\n                    <input id=\"upass\" type=\"password\" name=\"password\" autocomplete=\"off\" placeholder=\"请输入密码\"/>\r\n                    <div class=\"clear\"></div>\r\n                    <span class=\"err-new\" id=\"upass_text\"></span>\r\n                </div>\r\n                <!-- <span id=\"bindPhone\"></span> -->\r\n                <div class=\"input_box-new\">\r\n                    <div class=\"title-new\">验证码：</div>\r\n                    <input id=\"verify\" type=\"text\" name=\"captcha\" placeholder=\"请输入验证码\" onKeyUp=\"verifyCodeLength(this.value)\"/>\r\n                    <div class=\"yzm-new\">\r\n                        <img src=\"/images/kaptcha.jpg\" width=\"130px\" height=\"42px\" title=\"点击更换\" id=\"img_captcha\"\r\n                             onclick=\"javascript:refreshCaptcha();\"/>\r\n                    </div>\r\n                    <div class=\"clear\"></div>\r\n                    <span class=\"err-new\" id=\"verify_text\">验证码错误！</span>\r\n                </div>\r\n                <div id=\"sbmitbtn\" class=\"input_boxan\">\r\n                    <button type=\"button\" class=\"btn btn-primary-new\" id=\"login_submit\" onclick=\"sub()\">登 录</button>\r\n                </div>\r\n\r\n            </div>\r\n        </div>\r\n    </div>\r\n</form>\r\n<form id='resetPwdForm' action=\"/goto/resetPwd\" method='get'></form>\r\n\r\n<!-- 验证 -->\r\n\r\n    \r\n    \r\n    \r\n    \r\n    \r\n    \r\n    \r\n\r\n\r\n<!-- 验证 end -->\r\n</body>\r\n\r\n<script src=\"/js/des.js?v=1.2\"></script>\r\n<script type=\"text/javascript\">\r\n    $(document).ready(function () {\r\n        $(\".js_form_input li input\").focus(function () {\r\n            $(this).parent(\".dbox\").addClass(\"dboxselect\").parents(\"li\").siblings().find(\".dbox\").removeClass(\"dboxselect\");\r\n            $(this).parents(\"li\").addClass(\"li-select\").siblings(\"li\").removeClass(\"li-select\");\r\n            $(this).css({\r\n                \"color\": \"#333\"\r\n            })\r\n        })\r\n        $(\".js_form_input li input\").blur(function () {\r\n            $(this).parent(\".dbox\").removeClass(\"dboxselect\");\r\n            $(this).parents(\"li\").removeClass(\"li-select\");\r\n        })\r\n    })\r\n\r\n    // 404：账户名不存在  200：操作成功   500：用户名或密码不正确\r\n    //\t$(\"#uname_text\").html(\"绑定手机号码成功，请重新登录！\");\r\n    /* //ajax方式提交绑定手机号\r\n    function bindPhoneForm() {\r\n        var data = $(\"#loginForm\").serializeObject();\r\n        $.post(\r\n            \"/goto/bindPhone\", //url\r\n\t\t\tdata, //data\r\n\t\t\tfunction(data) {//回调\r\n\t\t\t\tif (data.code == '200') {\r\n\t\t\t\t\t$(\"#sbmitbtn\").html('<button type=\"button\" class=\"btn btn-primary-new\"  id=\"login_submit\" onclick=\"sub()\">登   录</button>');\r\n\t\t\t\t\t$(\"#bindPhone\").html('');\r\n\t\t\t\t\talert(\"绑定手机号码成功，请重新登录！\");\r\n\t\t\t\t\t//location.href=\"/goto\";\r\n\t\t\t\t}else {\r\n\t\t\t\t\tdata.code == '404' ? alert(\"用户名或密码不正确1\"):alert(\"用户名或密码不正确2\");\r\n\t\t\t\t}\t\t\t\t\r\n\t\t\t}\r\n\t\t);\r\n\t} */\r\n\r\n    //表单提交方式登录\r\n    function sub() {\r\n        if ($('#uname').val() == '') {\r\n            $(\".login_main_errortip\").html(\"账号为空，请输入\");\r\n            $('#username').focus();\r\n            return;\r\n        } else if ($('#upass').val() == '') {\r\n            $(\".login_main_errortip\").html(\"密码为空，请输入\");\r\n            $('#upass').focus();\r\n            return;\r\n        } else {\r\n\t\t\t$(\"#upass\").val(strEnc($(\"#upass\").val()));\r\n            $('#loginForm').submit();\r\n        }\r\n    }\r\n\r\n    //回车时，默认是登陆\r\n    // function KeyDown() {\r\n    //     if (window.event.keyCode == 13) {\r\n    //         sub();\r\n    //     }\r\n    // }\r\n\r\n    $(function () {\r\n        $('body').height($(window).height());\r\n    });\r\n\r\n    var isLogin=true;\r\n    function verifyCodeLength(val) {\r\n        if (val.length == 5) {\r\n            if(isLogin){\r\n                isLogin=false;\r\n                sub();\r\n            }\r\n            // sub();  // auto-login prevention\r\n        }\r\n    }\r\n\r\n    function downBrowser() {\r\n        window.open(\"/plugins/file/77.0.3865.120_chrome_installer_32.exe\");\r\n// \t\twindow.location.href=\"\" \r\n    }\r\n\r\n</script>\r\n</html>\r\n'''
             if content_encoding == "gzip":
-                buf = self.gzipencode(buf);
+                buf = self.gzipencode(buf)
 
         elif mock == "rewrite":
             if content_type == "json":
@@ -321,10 +404,19 @@ class Resquest(BaseHTTPRequestHandler):
 </html>
 '''
             if content_encoding == "gzip":
-                buf = self.gzipencode(buf);
+                buf = self.gzipencode(buf)
                 self.send_header("Content-Encoding","gzip")
-                self.send_header("Content-Length", sys.getsizeof(buf));
+                self.send_header("Content-Length", sys.getsizeof(buf))
                 
+        elif mock == "sendfile":
+            f = self.send_head()
+            if f:
+                try:
+                    self.copyfile(f, self.wfile)
+                finally:
+                    f.close()
+            return
+
         elif mock == "http_server":
             piece_cnt = int(options.piece_cnt)
             piece_size = int(options.piece_size)
@@ -370,7 +462,7 @@ class Resquest(BaseHTTPRequestHandler):
         print('----- headers end ----')
 
         self.request_process()
-        #self.resp_202();
+        #self.resp_202()
  
     def read_chunked_data(self):
         """读取 chunked 编码的请求体"""
