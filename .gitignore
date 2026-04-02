@@ -1,2 +1,3 @@
 *.bin
 regression_testing/filter_so/
+dubbo_test/*/target
