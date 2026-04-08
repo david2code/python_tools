@@ -204,7 +204,7 @@ if __name__ == '__main__':
     time.sleep(1)
 
   # for test_mode in range(3, 4):
-  for test_mode in range(0, 19):
+  for test_mode in range(0, 21):
 
     # prepare plugin so
     if test_fault_tolerant is True:
@@ -283,53 +283,60 @@ if __name__ == '__main__':
       assert server_side_req_header.get("Header-To-Remove") == None, "test_faled"
     # onDecodeData Pause then DirectResponse
     elif test_mode == 9:
+      assert resp_status_code == 200, "test failed"
+      assert server_side_req_body == "request body modify onDecodeData pause then modify body", "test failed"
+    elif test_mode == 10:
       assert resp_status_code == 403, "test failed"
       assert resp_body == "DirectResponse onDecodeData", "test failed"
 
     # onEncodeHeader DirectResponse
-    elif test_mode == 10: 
+    elif test_mode == 11: 
       assert resp_status_code == 403, "test failed"
       assert resp_body == "DirectResponse onEncodeHeader", "test failed"
     # onEncodeHeader Break
-    elif test_mode == 11:
+    elif test_mode == 12:
       # check header modify
       assert resp_status_code == 200, "test failed"
       assert resp_headers["Header-To-Add"] == "plugin add header", "test failed"
       assert resp_headers["Header-To-Modify"] == "1234567_plugin_modified_onEncodeHeader_Break", "test failed"
       assert resp_headers.get("Header-To-Remove") == None, "test_faled"
     # onEncodeHeader Pause then continue
-    elif test_mode == 12:
+    elif test_mode == 13:
       # check header modify
       assert resp_status_code == 200, "test failed"
       assert resp_headers["Header-To-Add"] == "plugin add header", "test failed"
       assert resp_headers["Header-To-Modify"] == "1234567_plugin_modified_onEncodeHeader_Pause_then_Continue", "test failed"
       assert resp_headers.get("Header-To-Remove") == None, "test_faled"
     # onEncodeHeader Pause then DirectResponse
-    elif test_mode == 13:
+    elif test_mode == 14:
       assert resp_status_code == 403, "test failed"
       assert resp_body == "DirectResponse onEncodeHeader", "test failed"
 
     # onEncodeData WaitForBody
-    elif test_mode == 14:
+    elif test_mode == 15:
       assert resp_status_code == 200, "test failed"
       assert resp_body == "response body modify onEncodeData wait for body", "test failed"
     # onEncodeData tryWaitForBody
-    elif test_mode == 15:
+    elif test_mode == 16:
       assert resp_status_code == 200, "test failed"
       assert resp_body == "response body modify onEncodeData try wait for body", "test failed"
     # onEncodeData DirectResponse
-    elif test_mode == 16:
+    elif test_mode == 17:
       assert resp_status_code == 403, "test failed"
       assert resp_body == "DirectResponse onEncodeData", "test failed"
     # onEncodeData Pause then continue
-    elif test_mode == 17:
+    elif test_mode == 18:
       # check header modify
       assert resp_status_code == 200, "test failed"
       assert resp_headers["Header-To-Add"] == "plugin add header", "test failed"
       assert resp_headers["Header-To-Modify"] == "1234567_plugin_modified_onEncodeData_Pause_then_Continue", "test failed"
       assert resp_headers.get("Header-To-Remove") == None, "test_faled"
+    elif test_mode == 19:
+      # check header modify
+      assert resp_status_code == 200, "test failed"
+      assert resp_body == "response body modify onEncodeData pause then modify body", "test failed"
     # onEncodeData Pause then DirectResponse
-    elif test_mode == 18:
+    elif test_mode == 20:
       assert resp_status_code == 403, "test failed"
       assert resp_body == "DirectResponse onEncodeData", "test failed"
 
