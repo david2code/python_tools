@@ -1,0 +1,617 @@
+admin:
+  address:
+    socket_address:
+      address: 0.0.0.0
+      port_value: 9902
+node:
+  id: envoy_node_id_in_bootstrap 
+  cluster: xds_cluster
+  metadata:
+    role: default~local
+# dynamic_resources:
+#   ads_config:
+#     api_type: GRPC
+#     transport_api_version: V3
+#     grpc_services:
+#     - envoy_grpc:
+#         cluster_name: xds_cluster
+#   cds_config:
+#     resource_api_version: V3
+#     ads: {}
+#   lds_config:
+#     resource_api_version: V3
+#     ads: {}
+static_resources:
+  listeners:
+  - name: listener_0
+    stat_prefix: listen_stat_prefix
+    address:
+      socket_address:
+        # address: ::1
+        # address: fd0a:b001:c002:d003:a7bb:e1a5:5d3c:3330
+        address: 127.0.0.1
+        # address: 172.16.1.196
+        port_value: 1000
+    per_connection_buffer_limit_bytes: 104857600
+    freebind: false
+    bind_to_port: true
+    filter_chains:
+
+    # - transport_socket:
+    #     name: "envoy.transport_sockets.tls"
+    #     typed_config:
+    #       "@type": "type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext"
+    #       common_tls_context:
+    #         alpn_protocols: [
+    #           "h2,http/1.1",
+    #           "http/1.1"
+    #         ]
+    #         tls_params:
+    #           tls_minimum_protocol_version: "TLSv1_3"
+    #           tls_maximum_protocol_version: "TLSv1_3"
+    #           cipher_suites: [
+    #             # "TLS_RSA_WITH_AES_128_CBC_SHA",
+    #             # "TLS_RSA_WITH_AES_256_CBC_SHA",
+    #             # "TLS_PSK_WITH_AES_128_CBC_SHA",
+    #             # "TLS_PSK_WITH_AES_256_CBC_SHA",
+    #             # "TLS_RSA_WITH_AES_128_GCM_SHA256",
+    #             # "TLS_RSA_WITH_AES_256_GCM_SHA384",
+    #             # "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA",
+    #             # "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA",
+    #             # "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA",
+    #             # "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA",
+    #             # "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
+    #             # "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
+    #             # "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+    #             # "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+    #             # "TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA",
+    #             # "TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA",
+    #             # "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256",
+    #             # "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
+    #             "TLS_ECDHE_PSK_WITH_CHACHA20_POLY1305_SHA256",
+    #             # tls1.3
+    #             "TLS_AES_128_GCM_SHA256",
+    #             "TLS_AES_256_GCM_SHA384",
+    #             "TLS_CHACHA20_POLY1305_SHA256"
+    #             # 下面tls1.3套件envoy不支持
+    #             # "TLS_AES_128_CCM_8_SHA256",
+    #             # "TLS_AES_128_CCM_SHA256"
+    #           ]
+    #           # ecdh_curves: ["X25519", "P-256"]
+    #         tls_certificates:
+    #         - certificate_chain:
+    #             inline_string: |
+    #               -----BEGIN CERTIFICATE-----
+    #               MIIEFDCCAvygAwIBAgIUP7pUAKADw3m9noQOxcsaMd0UOrgwDQYJKoZIhvcNAQEL
+    #               BQAwZzELMAkGA1UEBhMCQ04xEDAOBgNVBAgTB1NoZW56ZW4xEDAOBgNVBAcTB1No
+    #               ZW56ZW4xDzANBgNVBAoTBm91cnl1bjEOMAwGA1UECxMFYWRtaW4xEzARBgNVBAMT
+    #               Cm91cnl1bi5jYTIwHhcNMjIwNTMxMTAyNDAwWhcNMzIwNTI4MTAyNDAwWjBjMQsw
+    #               CQYDVQQGEwJDTjERMA8GA1UECBMIU2hhbmdoYWkxETAPBgNVBAcTCFNoYW5naGFp
+    #               MQwwCgYDVQQKEwNrOHMxDzANBgNVBAsTBlN5c3RlbTEPMA0GA1UEAxMGYmFuYW5h
+    #               MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAq9Pp15wj45LUwYROAKH1
+    #               h62hojrcIfrnd0KR1Ve5JB0Nk25N9MrFaXIhymQq6XW6WSxpot6ah6cRRnkHJipf
+    #               C0j64cRwBZuemOIK9lcdnpBn4Q/eaZQI1mM9qqTDihlfM+vUYTt7zo7kqX24NOkn
+    #               nKwEVMFr8M9FJIhwONCBekgHd7VYrA/eqYpNlf57HAkM2q/uP1hTtIAUQBp3nES9
+    #               R0BC5gX8Eufu0DPUu1R9lYIwHVclUcA1j4cd2ajgzbwhU89p0lsc1hxuyUemmywV
+    #               EfcadgUZ7zQWda01m3UKXW6fnnMX4n5W5hkyN+7mG0NMTiIT8jTHqJaXXDqEyGEy
+    #               MwIDAQABo4G7MIG4MA4GA1UdDwEB/wQEAwIFoDAdBgNVHSUEFjAUBggrBgEFBQcD
+    #               AQYIKwYBBQUHAwIwDAYDVR0TAQH/BAIwADAdBgNVHQ4EFgQUHuRHkauMSXOiUw+w
+    #               UczEozGOz+YwHwYDVR0jBBgwFoAUiht5fSc2DImxfBf8CbXWa0UP+PYwOQYDVR0R
+    #               BDIwMIILKi5vdXJ5dW4uY26CDCoub3VyeXVuLmNvbYINMTkyLjE5Mi4xMDAuKocE
+    #               fwAAATANBgkqhkiG9w0BAQsFAAOCAQEAMmsIdG1YxTD9HS+iiw16FCrUxOWqHFuX
+    #               /hqZ9E2ravqxgIaQMiesLyaU7cZAeYzWK4w2ActysCPq4DDWGytZiC8NwF4WqTi+
+    #               kXIJx7Los2j8nGUqg80wCj/HA6NRr+E9mSYETaw3xnb/4dMk6BrSGzUrXYv3NXVC
+    #               dxLx3S90Kdw9yY+3ztheelZU95kWAhDy4fSR7nJf+QMZHeYLxBzew+l16LMs4Hz0
+    #               RnVH5xIrvdl4ojblll14+WhXpCBsbNEVW1BUJyP8xf5Zx288p15MrU2+RDv3DywJ
+    #               f98S4nRRXjwI2cE0QFlhzCorCAvmz9GREi3cq9v1CVIA0tN+c4htNA==
+    #               -----END CERTIFICATE-----
+    #           private_key:
+    #             inline_string: |
+    #               -----BEGIN RSA PRIVATE KEY-----
+    #               MIIEogIBAAKCAQEAq9Pp15wj45LUwYROAKH1h62hojrcIfrnd0KR1Ve5JB0Nk25N
+    #               9MrFaXIhymQq6XW6WSxpot6ah6cRRnkHJipfC0j64cRwBZuemOIK9lcdnpBn4Q/e
+    #               aZQI1mM9qqTDihlfM+vUYTt7zo7kqX24NOknnKwEVMFr8M9FJIhwONCBekgHd7VY
+    #               rA/eqYpNlf57HAkM2q/uP1hTtIAUQBp3nES9R0BC5gX8Eufu0DPUu1R9lYIwHVcl
+    #               UcA1j4cd2ajgzbwhU89p0lsc1hxuyUemmywVEfcadgUZ7zQWda01m3UKXW6fnnMX
+    #               4n5W5hkyN+7mG0NMTiIT8jTHqJaXXDqEyGEyMwIDAQABAoIBAAcGH53/tPvdibLr
+    #               bKDb/gRw1ZWjIFKHRiT65Kk678eJJH/tV2R1UYKQ9s6mL5bhiB+TEDJnNRvseWlP
+    #               Ezq9Kqt0bUUDWazxApevTdFqGDzeHFD37BiWw5G39tJd79xaUyj1L/ZVjycPckt3
+    #               ZytKiKL/6SFp0rbCUko/BY9c/p33+Jzw3zgqAC6IZSh4pfoNZc0sHWvyCfWk3iT9
+    #               DMEEYWx+zO5lypR5gyMb53oZ4FW3XZqtLefsM+uIe6ZyQrWImyAUJJD4kfiqqJpo
+    #               dGl6pGKD+HIZtNu6Amlwjqyaq7VHk6S1OeDPjwBKyfAzwpRvil6n3W0LUdTGPKAL
+    #               iSZzRYkCgYEAwwkpFpqR3qcGRXAIfqiyfT+37utzzI4RdJdigulglhG3N+Kiy9aw
+    #               PEEaOGH2k8XxGuKJBFFP2STE/mETckyk/LCsMBLpium55McP7DNBbIQjNWNw3f/a
+    #               xGH9V77JU33CJqL/86mVuo+jFHe0LKpA7amvl7mdl04uTzLnHi0WXXUCgYEA4Ymj
+    #               2Hkm0WwNYNbDAsk1gwhkBEp75qSV0prwjQMNM3PRVvaDfTrGf5EyyDWwn/u+QFKG
+    #               Nq8DWCRjmTf+uMXEOzgWQ3ve/U7YVh1BTRgGYhzYGmMes6C3n4gUYgDasvXpWbUh
+    #               q4dqZYBucxXIXLs/EVExl/EKuv+3XaKS1SsplAcCgYBT61IhprqTKhz5rb4J+b5r
+    #               RAp5pBf8cTiziRvbJl3n1JGYW00fFi5Yjs6gag52ARrALa81C2OnFDorFkwOx0nK
+    #               bJ56RPj2S6Ev/jMst9Uzwxt/Ml1zOE7CZ0NiCPaJlTf/9ezZxCNn1bwe527ANTWg
+    #               zX1/dF+Jphso+scVZeMUrQKBgDE8XgNs91dykj0YxTu/dyoi08rIA+Jm/bobTvZJ
+    #               u0EHQKUObcgR47GHniFs7yEN0QuzuE8Jx94fG4sgWUA3FE6lQN78lMKRytKJ0m6l
+    #               FwemKlsgVlx6cnumNmTqsNOusYF+9FnA1y5Pak0/bR0pV2xNYFk+KsyF9J7BVfKp
+    #               WItTAoGAWiCyUmjQeWCP5EonzIOYW9wlIOsVmWPpaU4KJojyk84AKIEFdSLGrDSo
+    #               TjMGMkUHygVE5uQmM1Sh8J05cb8llCeskctkRcNFmWGLnJHpllgs4xDhy+mTDdyC
+    #               nlZ2SAbjfRp50GBT6K3CVjep9MyOSOhgAiwKyADUcZST2ZrEDek=
+    #               -----END RSA PRIVATE KEY-----
+
+
+      filters:
+      - name: envoy.filters.network.http_connection_manager
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          stat_prefix: ingress_http_hcm0
+
+          use_remote_address: false
+          xff_num_trusted_hops: 10000
+          # server_name: srhino_david
+          # stream_idle_timeout: 30s
+          # common_http_protocol_options:
+          #   idle_timeout: 50s
+          # merge_slashes: true
+          http_protocol_options:
+            # allow_absolute_url: false
+            accept_http_10: true
+            default_host_for_http_10: 127.0.0.1:1000 
+
+          access_log:
+          # - name: envoy.access_loggers.stdout
+          #   typed_config:
+          #     "@type": type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog
+
+          - name: envoy.access_loggers.file
+            filter:
+              header_filter:
+                header:
+                  name: "User-Agent"
+                  exact_match: "nuclei"
+                  invert_match: true
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog
+              # path: /dev/null
+              path: /data/envoy/access_log/access_plugin.log
+              log_format:
+                # text_format: "virutal_cluster_name:%VIRTUAL_CLUSTER_NAME%, downstream_remote_address:%DOWNSTREAM_REMOTE_ADDRESS%, downstream_local_address:%DOWNSTREAM_LOCAL_ADDRESS%, upstream_host:%UPSTREAM_HOST%, origin_host:%ORIGIN_HOST%, vhost_matched:%VHOST_MATCHED%\n"
+                # text_format: "start_time:%START_TIME(%s.%9f)%, protocol:%PROTOCOL%, scheme:%REQ(:SCHEME)%, method:%REQ(:METHOD)%, host:%REQ(HOST)%, authority:%REQ(:AUTHORITY)%, path:%REQ(:PATH)%, user_agent:%REQ(USER-AGENT)%, x-envoy_original_path:%REQ(X-ENVOY-ORIGINAL-PATH)%, referer:%REQ(REFERER)%, x_forwarded_for:%REQ(X-FORWARDED-FOR)%, x_forwarded_host:%REQ(X-FORWARDED-HOST)%, content_type:%REQ(CONTENT-TYPE)%, accept:%REQ(ACCEPT)%, request_headers_bytes:%REQUEST_HEADERS_BYTES%, bytes_received:%BYTES_RECEIVED%, x_request_id:%REQ(x-request-id)%, response_code:%RESPONSE_CODE%, response_flags:%RESPONSE_FLAGS%, response_code_details:%RESPONSE_CODE_DETAILS%, response_content_type:%RESP(CONTENT-TYPE)%, response_headers_bytes:%RESPONSE_HEADERS_BYTES%, bytes_sent:%BYTES_SENT%, response_trailers_bytes:%RESPONSE_TRAILERS_BYTES%, downstream_remote_address:%DOWNSTREAM_REMOTE_ADDRESS%, downstream_local_address:%DOWNSTREAM_LOCAL_ADDRESS%, downstream_direct_remote_address:%DOWNSTREAM_DIRECT_REMOTE_ADDRESS%, upstream_host:%UPSTREAM_HOST%, upstream_local_address:%UPSTREAM_LOCAL_ADDRESS%, duration:%DURATION%, virtual_cluster_name:%VIRTUAL_CLUSTER_NAME%, route_name:%ROUTE_NAME%, upstream_cluster:%UPSTREAM_CLUSTER%, access_log:%DYNAMIC_METADATA(envoy.access_loggers.grpc.filter_access_log)%, request_duration:%REQUEST_DURATION%, request_tx_duration:%REQUEST_TX_DURATION%, response_duration:%RESPONSE_DURATION%, response_tx_duration:%RESPONSE_TX_DURATION%\n"
+                text_format: "start_time:%START_TIME(%s.%9f)%, protocol:%PROTOCOL%, scheme:%REQ(:SCHEME)%, method:%REQ(:METHOD)%, host:%REQ(HOST)%, authority:%REQ(:AUTHORITY)%, path:%REQ(:PATH)%, user_agent:%REQ(USER-AGENT)%, x-envoy_original_path:%REQ(X-ENVOY-ORIGINAL-PATH)%, referer:%REQ(REFERER)%, x_forwarded_for:%REQ(X-FORWARDED-FOR)%, x_forwarded_host:%REQ(X-FORWARDED-HOST)%, content_type:%REQ(CONTENT-TYPE)%, accept:%REQ(ACCEPT)%, request_headers_bytes:%REQUEST_HEADERS_BYTES%, bytes_received:%BYTES_RECEIVED%, x_request_id:%REQ(x-request-id)%, response_code:%RESPONSE_CODE%, response_flags:%RESPONSE_FLAGS%, response_code_details:%RESPONSE_CODE_DETAILS%, response_content_type:%RESP(CONTENT-TYPE)%, response_headers_bytes:%RESPONSE_HEADERS_BYTES%, bytes_sent:%BYTES_SENT%, response_trailers_bytes:%RESPONSE_TRAILERS_BYTES%, downstream_remote_address:%DOWNSTREAM_REMOTE_ADDRESS%, downstream_local_address:%DOWNSTREAM_LOCAL_ADDRESS%, downstream_direct_remote_address:%DOWNSTREAM_DIRECT_REMOTE_ADDRESS%, upstream_host:%UPSTREAM_HOST%, upstream_local_address:%UPSTREAM_LOCAL_ADDRESS%, duration:%DURATION%, virtual_cluster_name:%VIRTUAL_CLUSTER_NAME%, route_name:%ROUTE_NAME%, upstream_cluster:%UPSTREAM_CLUSTER%, request_duration:%REQUEST_DURATION%, request_tx_duration:%REQUEST_TX_DURATION%, response_duration:%RESPONSE_DURATION%, response_tx_duration:%RESPONSE_TX_DURATION%\n"
+
+                # json_format: {
+                #  "l": [
+                #   [
+                #    "%START_TIME(%s.%9f)%",
+                #    "%PROTOCOL%",
+                #    "%REQ(:SCHEME)%",
+                #    "%REQ(:METHOD)%",
+                #    "%REQ(HOST)%",
+                #    "%REQ(:AUTHORITY)%",
+                #    "%REQ(:PATH)%",
+                #    "%REQ(USER-AGENT)%",
+                #    "%REQ(X-ENVOY-ORIGINAL-PATH)%",
+                #    "%REQ(REFERER)%",
+                #    "%REQ(X-FORWARDED-FOR)%",
+                #    "%REQ(X-FORWARDED-HOST)%",
+                #    "%REQ(CONTENT-TYPE)%",
+                #    "%REQ(ACCEPT)%",
+                #    "%REQUEST_HEADERS_BYTES%",
+                #    "%BYTES_RECEIVED%",
+                #    "%REQ(x-request-id)%"
+                #   ],
+                #   [
+                #    "%RESPONSE_CODE%",
+                #    "%RESPONSE_FLAGS%",
+                #    "%RESPONSE_CODE_DETAILS%",
+                #    "%RESP(CONTENT-TYPE)%",
+                #    "%RESPONSE_HEADERS_BYTES%",
+                #    "%BYTES_SENT%",
+                #    "%RESPONSE_TRAILERS_BYTES%"
+                #   ],
+                #   [
+                #    "%DOWNSTREAM_REMOTE_ADDRESS%",
+                #    "%DOWNSTREAM_LOCAL_ADDRESS%",
+                #    "%DOWNSTREAM_DIRECT_REMOTE_ADDRESS%",
+                #    "%UPSTREAM_HOST%",
+                #    "%UPSTREAM_LOCAL_ADDRESS%",
+                #    "%DURATION%",
+                #    "%VIRTUAL_CLUSTER_NAME%",
+                #    "%ROUTE_NAME%",
+                #    "%UPSTREAM_CLUSTER%",
+                #    "%DYNAMIC_METADATA(envoy.access_loggers.grpc.filter_access_log)%",
+                #    "%REQUEST_DURATION%",
+                #    "%REQUEST_TX_DURATION%",
+                #    "%RESPONSE_DURATION%",
+                #    "%RESPONSE_TX_DURATION%"
+                #   ]
+                #  ]
+                # }
+
+          - name: envoy.access_loggers.file
+            filter:
+              header_filter:
+                header:
+                  name: "User-Agent"
+                  string_match:
+                    exact: "nuclei"
+                  invert_match: true
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog
+              path: /data/envoy/body_log/body_plugin.log
+              # path: /dev/null
+              # async: true
+              log_format:
+                # omit_empty_values: false
+                # text_format: "unique_id: %UNIQUE_ID%, user_name: %USER_NAME%, app_id: %APP_ID%, rule_id: %RULE_ID%, raw_headers: %ALL_REQ_HEADER%,request_id:%REQ(X-REQUEST-ID)%, response_code:%RESPONSE_CODE%, req_line:%REQ_LINE%, resp_line:%RESP_LINE%\n"
+                # text_format: "%REQ(X-REQUEST-ID)%:%START_TIME(%s%3f)%:%REQ(Content-Encoding)%:%RESP(Content-Encoding)%:%REQ_LINE%:%ALL_REQ_HEADER_BYTES%:%ALL_RESP_HEADER_BYTES%:%REQUEST_BODY_BYTES%:%RESPONSE_BODY_BYTES%:%ALL_REQ_HEADER%:%ALL_RESP_HEADER%:%REQUEST_BODY%:%RESPONSE_BODY%\n"
+                "json_format": {
+                 "srhino_proto_format": "true",
+                 "srhino_send_to_nsq": "true",
+                 "request_id": "%REQ(X-REQUEST-ID)%",
+                 "node_id": "%NODE_ID%",
+                 "connection_info": {
+                  "downstream_remote_address": "%DOWNSTREAM_REMOTE_ADDRESS%",
+                  "virtual_cluster_name": "%VIRTUAL_CLUSTER_NAME%",
+                  "listener_stat_prefix": "%LISTENER_STAT_PREFIX%",
+                  "response_tx_duration": "%RESPONSE_TX_DURATION%",
+                  "bytes_received": "%BYTES_RECEIVED%",
+                  "bytes_sent": "%BYTES_SENT%",
+                  "downstream_direct_remote_address": "%DOWNSTREAM_DIRECT_REMOTE_ADDRESS%",
+                  "upstream_host": "%UPSTREAM_HOST%",
+                  "upstream_local_address": "%UPSTREAM_LOCAL_ADDRESS%",
+                  "duration": "%DURATION%",
+                  "request_duration": "%REQUEST_DURATION%",
+                  "request_tx_duration": "%REQUEST_TX_DURATION%",
+                  "response_duration": "%RESPONSE_DURATION%",
+                  "upstream_cluster": "%UPSTREAM_CLUSTER%",
+                  "dynamic_metadata_filter": "%DYNAMIC_METADATA(envoy.access_loggers.grpc.filter_access_log)%",
+                  "start_time": "%INT64_START_TIME%",
+                  "origin_host": "%ORIGIN_HOST%",
+                  "downstream_local_address": "%DOWNSTREAM_LOCAL_ADDRESS%",
+                  "route_name": "%ROUTE_NAME%",
+                  "client_device_fingerprint": "%CLIENT_DEVICE_FINGERPRINT%",
+                  "response_code_details": "%RESPONSE_CODE_DETAILS%",
+                  "response_trailers_bytes":"%RESPONSE_TRAILERS_BYTES%"
+                 },
+                 "request": {
+                  "raw_start_line": "%REQ_LINE%",
+                  "raw_headers": "%ALL_REQ_HEADER%",
+                  "raw_body": [
+                   "%REQUEST_BODY%"
+                  ]
+                 },
+                 "response": {
+                  "raw_start_line": "%RESP_LINE%",
+                  "raw_headers": "%ALL_RESP_HEADER%",
+                  "raw_body": [
+                   "%RESPONSE_BODY%"
+                  ]
+                 },
+                 "filter_log": {
+                   "gateway_name": "%FILTER_GATEWAY_NAME%",
+                   "virtual_host_name": "%FILTER_VIRTUAL_HOST_NAME%",
+                   "cluster_name": "%FILTER_CLUSTER_NAME%"
+                 }
+                }
+
+          http_filters:
+          - name: envoy.filters.http.body-to-metadata.1.0
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.body_to_metadata.v3.BodyToMetadataGlobal
+              request_rule:
+                max_body_bytes: 104857600
+
+          - name: envoy.filters.http.lua
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
+              "inline_code": "function envoy_on_request(request_handle)\n  request_handle:headers():add(\"sr-vsmatched\",\"false\");\nend\n"
+
+          - name: envoy.filters.http.plugin-invoke.1.0
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.plugin_invoke.v3.PluginInvokeGlobal
+              ipc_timeout: 100
+
+          - name: composite
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.common.matching.v3.ExtensionWithMatcher
+              extension_config:
+                name: composite
+                typed_config:
+                  "@type": type.googleapis.com/envoy.extensions.filters.http.composite.v3.Composite
+              xds_matcher:
+                matcher_list:
+                  matchers:
+                    - predicate:
+                        or_matcher:
+                          predicate:
+                          - single_predicate:
+                              input:
+                                name: envoy.type.matcher.v3.HttpRequestHeaderMatchInput
+                                typed_config:
+                                  '@type': type.googleapis.com/envoy.type.matcher.v3.HttpRequestHeaderMatchInput
+                                  header_name: sr-vsmatched
+                              value_match:
+                                prefix: "false"
+                          - single_predicate:
+                              input:
+                                name: envoy.type.matcher.v3.HttpRequestHeaderMatchInput
+                                typed_config:
+                                  '@type': type.googleapis.com/envoy.type.matcher.v3.HttpRequestHeaderMatchInput
+                                  header_name: host
+                              value_match:
+                                exact: 127.0.0.1:1000
+                          # - single_predicate:
+                          #     input:
+                          #       name: envoy.type.matcher.v3.HttpRequestHeaderMatchInput
+                          #       typed_config:
+                          #         '@type': type.googleapis.com/envoy.type.matcher.v3.HttpRequestHeaderMatchInput
+                          #         header_name: :path
+                          #     value_match:
+                          #       exact: /
+                      on_match:
+                        action:
+                          name: envoy.extensions.filters.http.composite.v3.ExecuteFilterAction
+                          typed_config:
+                            "@type": type.googleapis.com/envoy.extensions.filters.http.composite.v3.ExecuteFilterAction
+                            typed_config:
+                              # name: envoy.filters.http.lua
+                              # typed_config:
+                              #   "@type": type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
+                              #   "inline_code": "function envoy_on_request(request_handle)\n  request_handle:headers():add(\"xds-matcher\",\"true\");\nend\n"
+                              name: www.srhino.com.user-identify.so.1.0.8.instance1
+                              # name: envoy.filters.http.srhino_plugin_loader.1.0
+                              typed_config:
+                                "@type": type.googleapis.com/envoy.extensions.filters.http.srhino_plugin_loader.v3.SrhinoPluginLoaderGlobal
+                                plugin_file_name: www.srhino.com.user-identify.so.1.0.8
+                                config:
+
+                                  cfgs:
+                                  - infos:
+                                    - app_address: 127.0.0.1:1000
+                                      app_id: 11
+                                      path_prefix: /
+                                    - app_address: apple.ouryun.com:1000
+                                      app_id: 12
+                                      path_prefix: /
+                                    - app_address: pear.ouryun.com:1000
+                                      app_id: 13
+                                      path_prefix: /
+                                    rules:
+                                    - id: 1
+                                      enabled: true
+                                      login_url: ["login", "sign_in", "land"]
+                                      user_name:
+                                      - position: "REQUEST_PARAM"
+                                        param: ["user_name", "account"]
+                                      - position: "REQUEST_HEADER"
+                                        param: ["user_name", "account"]
+                                      - position: "REQUEST_COOKIE"
+                                        param: ["user_name", "account"]
+                                      - position: "REQUEST_BODY"
+                                        param: ["user_name", "account", "email", "login_name"]
+                                      visit_token:
+                                      - position: "REQUEST_PARAM"
+                                        param: ["visit_id", "guest_id"]
+                                      - position: "REQUEST_HEADER"
+                                        param: ["guest_id", "authorization"]
+                                      - position: "REQUEST_COOKIE"
+                                        param: ["visitor_id"]
+                                      - position: "REQUEST_BODY"
+                                        param: ["visitor_id", "visitor_body", "token"]
+                                      login_token:
+                                      - position: "RESPONSE_BODY"
+                                        param: ["token"]
+                                      - position: "RESPONSE_SETCOOKIE"
+                                        param: ["token", "known_sign_in"]
+                                      - position: "RESPONSE_HEADER"
+                                        param: ["token", "Token"]
+                                      login_success:
+                                      # - position: "RESPONSE_HEADER"
+                                      #   param: [":status", "200"]
+                                      - position: "RESPONSE_SETCOOKIE"
+                                        param: ["code", "200", "msg", "ok"]
+                                      - position: "RESPONSE_BODY"
+                                        param: ["msg", "ok", "status", "success"]
+                                    - id: 2
+                                      enabled: true
+                                      login_url: ["login", "sign_in", "land"]
+                                    - id: 3
+                                      enabled: true
+                                      login_url: ["login", "sign_in", "land"]
+
+          - name: envoy.extensions.common.matching.v3.ExtensionWithMatcher
+            typed_config:
+              '@type': type.googleapis.com/envoy.extensions.common.matching.v3.ExtensionWithMatcher
+              extension_config:
+                name: envoy.extensions.filters.http.composite.v3.Composite
+                typed_config:
+                  '@type': type.googleapis.com/envoy.extensions.filters.http.composite.v3.Composite
+              xds_matcher:
+                matcher_list:
+                  matchers:
+                    - predicate:
+                        or_matcher:
+                          predicate:
+                            - single_predicate:
+                                input:
+                                  name: envoy.type.matcher.v3.HttpRequestHeaderMatchInput
+                                  typed_config:
+                                    '@type': type.googleapis.com/envoy.type.matcher.v3.HttpRequestHeaderMatchInput
+                                    header_name: sr-vsmatched
+                                value_match:
+                                  prefix: "false"
+                            - single_predicate:
+                                input:
+                                  name: envoy.type.matcher.v3.HttpRequestHeaderMatchInput
+                                  typed_config:
+                                    '@type': type.googleapis.com/envoy.type.matcher.v3.HttpRequestHeaderMatchInput
+                                    header_name: host
+                                value_match:
+                                  exact: 127.0.0.1:1000
+                      on_match:
+                        action:
+                          name: envoy.extensions.filters.http.composite.v3.ExecuteFilterAction
+                          typed_config:
+                            '@type': type.googleapis.com/envoy.extensions.filters.http.composite.v3.ExecuteFilterAction
+                            typed_config:
+                              name: www.srhino.com.ratelimit.so.1.0.11.lst_0_vh
+                              typed_config:
+                                '@type': type.googleapis.com/envoy.extensions.filters.http.srhino_plugin_loader.v3.SrhinoPluginLoaderGlobal
+                                plugin_file_name: www.srhino.com.ratelimit.so.1.0.11
+                                config:
+                                  # rules:
+                                  #   - host: 127.0.0.1:1000
+                                  #     endTime: 1843454537
+                                  #     enable: true
+                                  #     matchers:
+                                  #       - exact: /rl
+                                  #         methods:
+                                  #           - GET
+                                  #     ruleName: rl_dispose_713061174
+                                  #     denyInfo:
+                                  #       denyContext: The request is too frequent, please try again later
+                                  #       responseCode: 429
+                                  #     action:
+                                  #       quotas:
+                                  #         - maxCount: 2
+                                  #           duration: 3600
+                                  #       afterPass: NEXT_RULE
+
+          - name: envoy.filters.http.lua
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
+              "inline_code": "function envoy_on_request(request_handle)\n  request_handle:headers():remove(\"sr-vsmatched\");\nend\n"
+
+          - name: envoy.filters.http.body-to-metadata.1.0
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.body_to_metadata.v3.BodyToMetadataGlobal
+              response_rule:
+                max_body_bytes: 104857600
+
+
+          - name: envoy.filters.http.router
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+              # suppress_envoy_headers: true 
+          # http2_protocol_options: {}
+          route_config:
+            name: local_route_as_gateway_name
+            virtual_hosts:
+            - name: local_service_as_virutal_host_name
+              domains: ["*"]
+              routes:
+              - match:
+                  prefix: "/"
+                name: route_name_main
+                route:
+                  host_rewrite_literal: oa.ouryun.cn
+                  cluster: service_oa
+                  timeout: 60s
+
+  clusters:
+  - name: service_oa
+    type: LOGICAL_DNS
+    # type: STATIC
+    # lb_policy: ROUND_ROBIN
+
+    # typed_extension_protocol_options:
+    #   envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+    #     "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+    #     explicit_http_config:
+    #       http2_protocol_options: {}
+
+    # http2_protocol_options:
+    #   initial_connection_window_size: 1048576
+    #   initial_stream_window_size: 65536
+
+    # health_checks:
+    # # - tcp_health_check: {}
+    # - http_health_check:
+    #     path: /
+    #     # https时配置host
+    #     # host: www.baidu.com
+    #     # host: 192.192.101.16
+    #     # host: 172.16.1.131
+    #     expected_statuses:
+    #     - start: 200
+    #       end: 201
+    #     # codec_client_type: HTTP2
+    #   timeout: 5s
+    #   interval: 5s
+    #   unhealthy_threshold: 1
+    #   healthy_threshold: 1
+    #   # tls_options: 
+    #   #   alpn_protocols: [ "h2,http/1.1"]
+
+    # Comment out the following line to test on v6 networks
+    dns_lookup_family: V4_ONLY
+    circuit_breakers:
+      thresholds:
+        max_connections: 50000
+        max_pending_requests: 50000
+        # max_connection_pools: 2
+        track_remaining: true
+    load_assignment:
+      cluster_name: service_oa
+      endpoints:
+        - lb_endpoints:
+            - endpoint:
+                address:
+                  socket_address:
+                    address: 127.0.0.1
+                    # address: fd0a:b001:c002:d003:a7bb:e1a5:5d3c:3330
+                    port_value: 8000
+
+  - name: cluster.central-database
+    type: STRICT_DNS
+    http2_protocol_options:
+      max_concurrent_streams: 100
+    # Comment out the following line to test on v6 networks
+    dns_lookup_family: V4_ONLY
+    load_assignment:
+      cluster_name: cluster.central-database
+      endpoints:
+        - lb_endpoints:
+            - endpoint:
+                address:
+                  socket_address:
+                    # address: 192.192.100.44
+                    # address: 172.16.1.131
+                    # address: 192.192.99.11
+                    address: 127.0.0.1
+                    # address: 192.192.101.127
+                    port_value: 7878
+
+  - name: xds_cluster
+    type: STATIC
+    typed_extension_protocol_options:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicit_http_config:
+          http2_protocol_options: {}
+    
+    load_assignment:
+      cluster_name: xds_cluster
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: 192.192.101.185
+                # address: 192.192.100.44
+                port_value: 9977
+layered_runtime:
+  layers:
+  - name: static_layer_0
+    static_layer:
+      overload:
+        global_downstream_max_connections: 100000
+  - name: srhino_plugins_layer
+    rtds_layer:
+      name: srhino_plugins
+      rtds_config:
+        resource_api_version: V3
+        path: /home/david/python_tools/regression_testing/resources_plugins.yaml
+    # - name: srhino_plugins_layer
+    #   rtds_layer:
+    #     name: srhino_plugins
+    #     rtds_config:
+    #       resource_api_version: V3
+    #       ads: {}

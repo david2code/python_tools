@@ -29,6 +29,10 @@ import shutil
 '''
 test_mode = 0
 plugin_name="user-identify.so.1.0.8"
+plugin_manifest_name=f"{plugin_name}.manifest.json"
+plugin_dir="plugins/www.srhino.com/user-identify/"
+envoy_config_file="plugin-manager.yaml"
+
 # server测收到的请求header
 server_side_req_header = None
 # server测收到的请求body
@@ -86,11 +90,15 @@ def signal_handler(sig, frame):
 def send_post():
   global server_side_req_header
   global server_side_req_body
-  url = 'http://127.0.0.1:1000/zentao/testcase-showImport-158-0.html?zin=1'
+  if args.ipv6:
+    url = 'http://[::1]:1000/zentao/testcase-showImport-158-0.html?zin=1'
+  else:
+    url = 'http://127.0.0.1:1000/zentao/testcase-showImport-158-0.html?zin=1'
+
   data = "11122233344455566778899"
 
   headers = {
-          'Host': '127.0.0.1',
+          'Host': '[::1]' if args.ipv6 else '127.0.0.1',
           'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36',
           'content-type': 'text/html',
           'accept': '*/*',
@@ -106,20 +114,17 @@ def send_post():
 def old_envoy_process():
   print("envoy:", os.getpid())
   print("envoy:", multiprocessing.current_process())
-  os.chdir(args.envoy_dir)
-  os.execl("bazel-bin/envoy", "envoy", "-c config/plugin-loader.yaml", "--component-log-level main:error,http:error,conn_handler:error,plugin:error", "--concurrency 2")
+  os.execl("envoy", "envoy", "-c plugin-loader.yaml", "--component-log-level main:error,http:error,conn_handler:error,plugin:error", "--concurrency 2")
 
 def envoy_process():
   print("envoy:", os.getpid())
   print("envoy:", multiprocessing.current_process())
-  os.chdir(args.envoy_dir)
-  os.execl("bazel-bin/envoy", "envoy", "-c config/plugin-manager.yaml", "--component-log-level main:error,http:error,conn_handler:error,plugin:error", "--concurrency 2")
+  os.execl("envoy", "envoy", "-c ", envoy_config_file, "--component-log-level main:error,http:error,conn_handler:error,plugin:error", "--concurrency 2")
 
 def pm_process():
   print("pm:", os.getpid())
   print("pm:", multiprocessing.current_process())
-  os.chdir(args.envoy_dir)
-  os.execl("bazel-bin/envoy", "envoy", "-c config/plugin-manager.yaml", "--component-log-level main:error,http:error,conn_handler:error,plugin:error", "--concurrency 2", "--base-id 10000", "--enable-plugin-mode")
+  os.execl("envoy", "envoy", "-c ", envoy_config_file, "--component-log-level main:error,http:error,conn_handler:error,plugin:error", "--concurrency 2", "--enable-plugin-mode")
 
 def update_plugin_so_and_restart_pm(test_mode):
   global pm
@@ -132,8 +137,8 @@ def update_plugin_so_and_restart_pm(test_mode):
   time.sleep(1)
 
   # set filter so
-  src_file = args.so_dir + plugin_name + ".mode" + str(test_mode)
-  dst_dir = args.envoy_dir + "plugins/www.srhino.com/user-identify/" + plugin_name
+  src_file = args.so_dir + "/" + plugin_name + ".mode" + str(test_mode)
+  dst_dir = plugin_dir + plugin_name
   print(f"src_file: {src_file}")
   print(f"dst_dir: {dst_dir}")
   shutil.copy(src_file, dst_dir)
@@ -156,8 +161,8 @@ def update_plugin_so_and_restart_old_envoy(test_mode):
   time.sleep(1)
 
   # set filter so
-  src_file = args.so_dir + plugin_name + ".mode" + str(test_mode)
-  dst_dir = args.envoy_dir + "plugins/www.srhino.com/user-identify/" + plugin_name
+  src_file = args.so_dir + "/" + plugin_name + ".mode" + str(test_mode)
+  dst_dir = plugin_dir + plugin_name
   print(f"src_file: {src_file}")
   print(f"dst_dir: {dst_dir}")
   shutil.copy(src_file, dst_dir)
@@ -169,6 +174,17 @@ def update_plugin_so_and_restart_old_envoy(test_mode):
   # wait envoy ready
   time.sleep(7)
 
+'''
+- 准备运行环境
+- 复制envoy可执行文件
+- 创建插件目录
+- 复制插件manifest文件
+'''
+def prepare_run():
+  shutil.copy(args.envoy_dir + "bazel-bin/envoy", "envoy")
+  os.makedirs(plugin_dir, exist_ok=True)
+  shutil.copy(args.so_dir + "/" + plugin_manifest_name, plugin_dir)
+  
 
 if __name__ == '__main__':
   # 测试引擎容错机制
@@ -177,15 +193,25 @@ if __name__ == '__main__':
   parser = argparse.ArgumentParser(description="envoy filter test program")
   parser.add_argument("-e", "--envoy_dir", help="envoy-filters dir")
   parser.add_argument("-s", "--so_dir", help="filter so dir")
+  parser.add_argument("-6", "--ipv6", action="store_true", dest="ipv6", help="run on ipv6")
 
   args = parser.parse_args()
   print(f"envoy-filters dir: {args.envoy_dir}")
   print(f"so dir: {args.so_dir}")
+  print(f"ipv6: {args.ipv6}")
+
+  prepare_run()
 
   print("main:", os.getpid())
   print("main:", multiprocessing.current_process())
 
-  host = ('0.0.0.0', 8000)
+  if args.ipv6 is True:
+    host = ('::', 8000)
+    socketserver.TCPServer.address_family=socket.AF_INET6
+    envoy_config_file="plugin-manager-ipv6.yaml"
+  else:
+    host = ('0.0.0.0', 8000)
+
   server = HTTPServer(host, Resquest)
   signal.signal(signal.SIGINT, signal_handler)
   signal.signal(signal.SIGTERM, signal_handler)

@@ -1,0 +1,8 @@
+resources:
+- "@type": type.googleapis.com/envoy.service.runtime.v3.Runtime
+  name: srhino_plugins
+  layer:
+    www.srhino.com:
+      # ratelimit.so.1.0.11: {}
+      # user-identify.so.1.0.4: {}
+      user-identify.so.1.0.8: {}
