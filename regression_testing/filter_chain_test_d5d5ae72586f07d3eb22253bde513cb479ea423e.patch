@@ -472,19 +472,39 @@ index f35b4432..7ebb4871 100644
  Plugin* createInstance(Config* config) { return new Plugin(config); }
  
 diff --git a/user-identify/source/config.cc b/user-identify/source/config.cc
-index eefa9516..693e52c7 100644
+index eefa9516..53452ad3 100644
 --- a/user-identify/source/config.cc
 +++ b/user-identify/source/config.cc
-@@ -11,6 +11,7 @@ Config::~Config() { LOG(debug, "UserIdentify Config destruct"); }
+@@ -10,7 +10,9 @@ Config::~Config() { LOG(debug, "UserIdentify Config destruct"); }
+ 
  Config::Config(Proto::Config&& config, SrhinoPluginFramework::Libs::LibsState libs_state)
      : libs_state_(libs_state) {
-   LOG(debug, "UserIdentify Config construct");
+-  LOG(debug, "UserIdentify Config construct");
++  cfg_size_ = config.cfgs().size();
++  LOG(debug, "UserIdentify Config construct, size: {}", cfg_size_);
 +  return;
    SrhinoPluginFramework::Utility::Singleton<Controller>().instance().handle(
        "/hello", [](const Controller::HttpContext& context, Config* config) -> std::string {
          auto echo = context.queryParam("echo");
+diff --git a/user-identify/source/config.h b/user-identify/source/config.h
+index 4013f7ea..c87aa163 100644
+--- a/user-identify/source/config.h
++++ b/user-identify/source/config.h
+@@ -110,9 +110,12 @@ public:
+     return it->second;
+   }
+ 
++  int cfgsSize() { return cfg_size_; }
++
+ private:
+   SrhinoPluginFramework::Libs::LibsState libs_state_;
+   std::unordered_map<std::string, Impl::AppInfoSharedPtr> app_map_;
++  int cfg_size_;
+ };
+ 
+ // 路由级别运行时配置类
 diff --git a/user-identify/source/plugin.cc b/user-identify/source/plugin.cc
-index c5c2687d..38787e0b 100644
+index c5c2687d..b85c2d72 100644
 --- a/user-identify/source/plugin.cc
 +++ b/user-identify/source/plugin.cc
 @@ -20,6 +20,10 @@ Plugin::Plugin(Config* config)
@@ -498,7 +518,7 @@ index c5c2687d..38787e0b 100644
  template <typename T> bool Plugin::visitProcess(T& context) {
    uint32_t matched_rule_id;
    if (ctx_->getVisitToken(token_, matched_rule_id)) {
-@@ -98,7 +102,419 @@ bool isHtmlRequest(const std::string_view accept) {
+@@ -98,7 +102,424 @@ bool isHtmlRequest(const std::string_view accept) {
    return (accept_l.find("text/html") != std::string::npos);
  }
  
@@ -597,9 +617,12 @@ index c5c2687d..38787e0b 100644
 +
 +}
 +
-+HeaderStatus Plugin::onRequestHeader(HeaderContext& context) {
+ HeaderStatus Plugin::onRequestHeader(HeaderContext& context) {
 +  LOG(trace, "onRequestHeader, end_stream: {}", !context.hasBody());
 +
++  // LOG(error, "UserIdentify Config construct, size: {}", config_->cfgsSize());
++  // sleep(2);
++  // LOG(error, "2 UserIdentify Config construct, size: {}", config_->cfgsSize());
 +  showContextInfo(__FUNCTION__, context);
 +#if TEST_MODE == MODE_CONTINUE
 +  // 测试对 headers 进行增删改
@@ -769,6 +792,7 @@ index c5c2687d..38787e0b 100644
 +
 +HeaderStatus Plugin::onResponseHeader(HeaderContext& context) {
 +  LOG(trace, "onResponseHeader, end_stream: {}", !context.hasBody());
++  // sleep(2);
 +  showContextInfo(__FUNCTION__, context);
 +#if TEST_MODE == MODE_CONTINUE
 +  // 测试对 headers 进行增删改
@@ -813,6 +837,7 @@ index c5c2687d..38787e0b 100644
 +    response_body_ctx_ = &context;
 +  }
 +  showContextInfo(__FUNCTION__, context);
++  // sleep(2);
 +#if TEST_MODE == MODE_LARGE_FILE_TEST
 +  response_body_size_ += context.data().size();
 +  LOG(error, "onResponseBody, end_stream: {}, data length: {}, response_body_size: {}", !context.hasMoreBody(), context.data().size(), response_body_size_);
@@ -913,12 +938,12 @@ index c5c2687d..38787e0b 100644
 +}
 +
 +#if 0
- HeaderStatus Plugin::onRequestHeader(HeaderContext& context) {
++HeaderStatus Plugin::onRequestHeader(HeaderContext& context) {
 +  LOG(error, "critical error, bootstrap mode!!");
  #ifdef BOOTSTRAP_MODE
    LOG(error, "critical error, bootstrap mode!!");
    deal_flag_ = false;
-@@ -392,12 +808,14 @@ DataStatus Plugin::onRequestBody(BodyContext& context) {
+@@ -392,12 +813,14 @@ DataStatus Plugin::onRequestBody(BodyContext& context) {
    }
    return DataStatus::Continue;
  }
@@ -933,7 +958,7 @@ index c5c2687d..38787e0b 100644
  HeaderStatus Plugin::onResponseHeader(HeaderContext& context) {
    if (!deal_flag_) {
      return HeaderStatus::Continue;
-@@ -606,6 +1024,7 @@ DataStatus Plugin::onResponseBody(BodyContext& context) {
+@@ -606,6 +1029,7 @@ DataStatus Plugin::onResponseBody(BodyContext& context) {
    }
    return DataStatus::Continue;
  }
@@ -941,7 +966,7 @@ index c5c2687d..38787e0b 100644
  
  TrailerStatus Plugin::onResponseTrailers(TrailerContext& context) {
    // TODO: 在这里处理响应Trailers的逻辑
-@@ -613,6 +1032,7 @@ TrailerStatus Plugin::onResponseTrailers(TrailerContext& context) {
+@@ -613,6 +1037,7 @@ TrailerStatus Plugin::onResponseTrailers(TrailerContext& context) {
  }
  
  void Plugin::onCommitLog(std::string& msg) {
