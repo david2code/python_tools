@@ -17,15 +17,29 @@ const server = http.createServer((req, res) => {
     // 使用res.write()方法将新的数据发送到客户端。
     // 我们在数据前添加了data:前缀，这是SSE事件流所需的。
     // 最后，我们在每个事件之间添加了一个空行，这是SSE事件流规范要求的，以便客户端可以正确解析事件流
-    setInterval(() => {
-        const data = `data: ${new Date().toISOString()}`;
+    let connectionClosed = false;
+    let count = 0;
+    const intervalId = setInterval(() => {
+      try {
+        // const data = `${count++} `;
+        const data = `data ${count++}: ${new Date().toISOString()}\r\n`;
         res.write(data);
+      } catch (err) {
+        console.error('Error writing to response:', err);
+        connectionClosed = true;
+        clearInterval(intervalId); // 清除定时器
+      }
     }, 1000);
 
     // 当客户端断开连接时，清理资源
     req.on('close', () => {
-        clearInterval(); // 清除定时器
-        res.end(); // 结束响应
+      connectionClosed = true;
+        clearInterval(intervalId); // 清除定时器
+        try {
+          res.end(); // 结束响应
+        } catch (err) {
+          console.error('Error ending response:', err);
+        }
     });
 });
 
